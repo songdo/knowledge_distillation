@@ -924,7 +924,7 @@ def main():
 
             for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration", ascii=True)):
                 batch = tuple(t.to(device) for t in batch)
-
+                
                 input_ids, input_mask, segment_ids, label_ids, seq_lengths = batch
                 if input_ids.size()[0] != args.train_batch_size:
                     continue

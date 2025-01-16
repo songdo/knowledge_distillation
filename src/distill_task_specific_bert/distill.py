@@ -34,31 +34,33 @@ def teacher_predict(teacher, example_list):
 
 
 def main():
-
+    # 
     num_epochs = 15
     batch_size = 64
-    alpha = 0.5
+    alpha = 0.5   # 啥
     # 构建词表
-    w2v = WordEmbedding(file_name='../../data/word2vec')
-    # 使用bert的语料处理方式
+    w2v = WordEmbedding(file_name='../../data/word2vec') # 用word2vec文件初始化并调用load_w2v，未追加新语料
+
+    # 使用bert的语料处理方式，加载原始语料
     processor = Processor()
+
     # 加载数据
     # train_example_list = processor.get_train_examples('../data/hotel')
     # dev_example_list = processor.get_dev_examples('../data/hotel')
-    train_example_list = processor.get_dev_examples('../../data/hotel')
+    train_example_list = processor.get_dev_examples('../../data/hotel') # 返回[InputExample(guid, text, label), ]
     dev_example_list = processor.get_train_examples('../../data/hotel')
     test_example_list = processor.get_test_examples('../../data/hotel')
-    train_token_list, train_label_list, train_len_list = \
-        process_example(train_example_list, w2v, max_length=50)
-    dev_token_list, dev_label_list, dev_len_list = \
-        process_example(dev_example_list, w2v, max_length=50)
-    test_token_list, test_label_list, test_len_list = \
-        process_example(test_example_list, w2v)
+
+    # 
+    train_token_list, train_label_list, train_len_list = process_example(train_example_list, w2v, max_length=50)
+    dev_token_list, dev_label_list, dev_len_list = process_example(dev_example_list, w2v, max_length=50)
+    test_token_list, test_label_list, test_len_list = process_example(test_example_list, w2v)
 
     if args.distill == 1:
         # 加载bert模型作为Teacher
         teacher = Teacher()
         print(teacher.predict('还不错，这个价位算是物有所值'))
+
         # 使用bert预估得到概率分布
         teacher_pred = teacher_predict(teacher, train_example_list)
 
@@ -70,9 +72,10 @@ def main():
     # 交叉熵
     cross_entropy_loss = nn.NLLLoss()
     # 均方误差
-    mse_loss = nn.MSELoss()
+    mse_loss = nn.MSELoss() # softloss选择MSE学习teacher的输出值
     # 优化器，lr影响较大
     opt = optim.Adam(model.parameters(), lr=0.0001)
+
     for _ in trange(num_epochs, desc='Epoch'):
         model.train()
         for idx in tqdm(range(0, len(train_token_list), batch_size)):
@@ -84,9 +87,11 @@ def main():
             # 使用BiLSTM对文本建模，得到softmax后值和log(softmax)值
             softmax_val, log_softmax_val, logits = model(x_list)
             if args.distill == 1:
+                
                 # bert预估的概率分布
-                teacher_pred_batch = FTensor(teacher_pred[idx: idx+batch_size])
-                # 交叉熵和均方误差
+                teacher_pred_batch = FTensor(teacher_pred[idx: idx+batch_size]) # 老师提前预测好，这里直接查表
+                
+                # 交叉熵和均方误差，hard lable用交叉熵；soft老师损失用MSE学习老师输出
                 loss = alpha * cross_entropy_loss(log_softmax_val, y_list) + \
                        (1 - alpha) * mse_loss(logits, teacher_pred_batch)
             else:
@@ -102,6 +107,9 @@ def main():
                 _, py = torch.max(model(x_list)[1], 1)
                 accu.append((py == y_list).float().mean().item())
         print(np.mean(accu))
+
+        # 模型保存吧
+        # sava
 
 
 if __name__ == '__main__':

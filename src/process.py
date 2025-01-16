@@ -13,6 +13,9 @@ class InputExample(object):
 
 
 class Processor(object):
+    '''
+    语料处理方式
+    '''
     def get_train_examples(self, data_dir):
         return self._create_examples(
             os.path.join(data_dir, 'train.txt'), 'train')
